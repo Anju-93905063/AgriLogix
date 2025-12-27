@@ -1,18 +1,53 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// Enums
+export const roleEnum = z.enum(["farmer", "distributor", "vendor"]);
+export const produceStatusEnum = z.enum(["Available", "In Transit", "Delivered"]);
+export const shipmentStatusEnum = z.enum(["Scheduled", "In Transit", "Delivered"]);
+
+// User Schema
+export const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: roleEnum,
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = userSchema.omit({ id: true });
+
+// Produce Schema
+export const produceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  quantity: z.number().min(0),
+  harvestDate: z.string(), // ISO date string
+  sourceLocation: z.string(),
+  status: produceStatusEnum.default("Available"),
 });
 
+export const insertProduceSchema = produceSchema.omit({ id: true });
+
+// Shipment Schema
+export const logSchema = z.object({
+  status: shipmentStatusEnum,
+  timestamp: z.string(),
+});
+
+export const shipmentSchema = z.object({
+  id: z.string(),
+  produceId: z.string(),
+  destination: z.string(),
+  deliveryDate: z.string(),
+  status: shipmentStatusEnum.default("Scheduled"),
+  logs: z.array(logSchema),
+});
+
+export const insertShipmentSchema = shipmentSchema.omit({ id: true, logs: true });
+
+// Types
+export type User = z.infer<typeof userSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type Produce = z.infer<typeof produceSchema>;
+export type InsertProduce = z.infer<typeof insertProduceSchema>;
+export type Shipment = z.infer<typeof shipmentSchema>;
+export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+export type ShipmentLog = z.infer<typeof logSchema>;

@@ -1,38 +1,138 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { 
+  User, InsertUser, 
+  Produce, InsertProduce, 
+  Shipment, InsertShipment 
+} from "@shared/schema";
+import mongoose, { Schema } from "mongoose";
 
-// modify the interface with any CRUD methods
-// you might need
+// Mongoose Schemas
+const userSchema = new Schema({
+  name: { type: String, required: true },
+  role: { type: String, enum: ["farmer", "distributor", "vendor"], required: true },
+});
+
+const produceSchema = new Schema({
+  name: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  harvestDate: { type: String, required: true },
+  sourceLocation: { type: String, required: true },
+  status: { type: String, enum: ["Available", "In Transit", "Delivered"], default: "Available" },
+});
+
+const logSchema = new Schema({
+  status: { type: String, enum: ["Scheduled", "In Transit", "Delivered"], required: true },
+  timestamp: { type: String, required: true },
+});
+
+const shipmentSchema = new Schema({
+  produceId: { type: String, required: true },
+  destination: { type: String, required: true },
+  deliveryDate: { type: String, required: true },
+  status: { type: String, enum: ["Scheduled", "In Transit", "Delivered"], default: "Scheduled" },
+  logs: [logSchema],
+});
+
+// Models
+// Use existing models if defined to prevent OverwriteModelError in dev HMR
+const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+const ProduceModel = mongoose.models.Produce || mongoose.model("Produce", produceSchema);
+const ShipmentModel = mongoose.models.Shipment || mongoose.model("Shipment", shipmentSchema);
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  
+  getAllProduce(): Promise<Produce[]>;
+  getProduce(id: string): Promise<Produce | undefined>;
+  createProduce(produce: InsertProduce): Promise<Produce>;
+  updateProduce(id: string, produce: Partial<InsertProduce>): Promise<Produce | undefined>;
+  
+  getShipments(): Promise<Shipment[]>;
+  createShipment(shipment: InsertShipment): Promise<Shipment>;
+  updateShipmentStatus(id: string, status: "Scheduled" | "In Transit" | "Delivered"): Promise<Shipment | undefined>;
+  
+  getDashboardStats(): Promise<{
+    totalProduce: number;
+    inTransitDeliveries: number;
+    deliveredItems: number;
+    lowStockItems: number;
+  }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class MongoStorage implements IStorage {
+  async getUsers(): Promise<User[]> {
+    const users = await UserModel.find();
+    return users.map(u => ({ ...u.toObject(), id: u._id.toString() }));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async createUser(user: InsertUser): Promise<User> {
+    const newUser = new UserModel(user);
+    await newUser.save();
+    return { ...newUser.toObject(), id: newUser._id.toString() };
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getAllProduce(): Promise<Produce[]> {
+    const produce = await ProduceModel.find();
+    return produce.map(p => ({ ...p.toObject(), id: p._id.toString() }));
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getProduce(id: string): Promise<Produce | undefined> {
+    if (!mongoose.Types.ObjectId.isValid(id)) return undefined;
+    const produce = await ProduceModel.findById(id);
+    return produce ? { ...produce.toObject(), id: produce._id.toString() } : undefined;
+  }
+
+  async createProduce(produce: InsertProduce): Promise<Produce> {
+    const newProduce = new ProduceModel(produce);
+    await newProduce.save();
+    return { ...newProduce.toObject(), id: newProduce._id.toString() };
+  }
+
+  async updateProduce(id: string, update: Partial<InsertProduce>): Promise<Produce | undefined> {
+    if (!mongoose.Types.ObjectId.isValid(id)) return undefined;
+    const updated = await ProduceModel.findByIdAndUpdate(id, update, { new: true });
+    return updated ? { ...updated.toObject(), id: updated._id.toString() } : undefined;
+  }
+
+  async getShipments(): Promise<Shipment[]> {
+    const shipments = await ShipmentModel.find();
+    return shipments.map(s => ({ ...s.toObject(), id: s._id.toString() }));
+  }
+
+  async createShipment(shipment: InsertShipment): Promise<Shipment> {
+    const newShipment = new ShipmentModel({
+      ...shipment,
+      logs: [{ status: "Scheduled", timestamp: new Date().toISOString() }]
+    });
+    await newShipment.save();
+    return { ...newShipment.toObject(), id: newShipment._id.toString() };
+  }
+
+  async updateShipmentStatus(id: string, status: "Scheduled" | "In Transit" | "Delivered"): Promise<Shipment | undefined> {
+    if (!mongoose.Types.ObjectId.isValid(id)) return undefined;
+    const shipment = await ShipmentModel.findById(id);
+    if (!shipment) return undefined;
+
+    shipment.status = status;
+    shipment.logs.push({ status, timestamp: new Date().toISOString() });
+    await shipment.save();
+
+    return { ...shipment.toObject(), id: shipment._id.toString() };
+  }
+
+  async getDashboardStats() {
+    const totalProduce = await ProduceModel.countDocuments();
+    const inTransitDeliveries = await ShipmentModel.countDocuments({ status: "In Transit" });
+    const deliveredItems = await ShipmentModel.countDocuments({ status: "Delivered" });
+    const lowStockItems = await ProduceModel.countDocuments({ quantity: { $lt: 50 } });
+
+    return {
+      totalProduce,
+      inTransitDeliveries,
+      deliveredItems,
+      lowStockItems,
+    };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new MongoStorage();
