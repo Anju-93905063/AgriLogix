@@ -3,13 +3,13 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  // In Vercel, process.cwd() is the most reliable way to find the project root
   const root = process.cwd();
 
+  // Vercel path for public assets inside the build output
   const possiblePaths = [
     path.resolve(root, "dist", "public"),
     path.resolve(root, "public"),
-    path.resolve(root, "..", "dist", "public"),
+    path.resolve(root, "..", "dist", "public"), // fallback for combined builds
   ];
 
   let distPath = "";
@@ -21,31 +21,36 @@ export function serveStatic(app: Express) {
   }
 
   if (!distPath) {
-    console.warn("Could not find static files. Looked in:", possiblePaths);
-    // As a last resort, just use 'public' relative to current file
-    distPath = path.resolve(process.cwd(), "dist", "public");
+    console.warn("Static files not found manually, falling back to process.cwd()/dist/public");
+    distPath = path.resolve(root, "dist", "public");
   }
 
-  console.log(`Serving static files from: ${distPath}`);
-
-  // Serve static assets first
+  // Serve static assets with correct MIME types
   app.use(express.static(distPath, {
     index: false,
-    fallthrough: true // Let it fall through to the SPA handler
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+    }
   }));
 
-  // SPA handler: All non-API requests serve index.html
+  // SPA handler: Serve index.html for all non-API routes
   app.get("*", (req, res, next) => {
-    // Skip API routes
     if (req.path.startsWith("/api")) {
       return next();
     }
 
+    // For Vercel, if static files were not found by express.static above,
+    // this will attempt to send index.html directly
     const indexPath = path.resolve(distPath, "index.html");
     if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
+      res.status(200).sendFile(indexPath);
     } else {
-      res.status(404).send("Front-end index.html not found.");
+      res.status(404).send("Application front-end (index.html) not found in deployment. Path: " + indexPath);
     }
   });
 }
