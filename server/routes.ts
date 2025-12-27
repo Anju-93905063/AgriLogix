@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { type Server } from "http";
-import { storage } from "./storage";
-import { connectDB } from "./db";
-import { api } from "@shared/routes";
+import { storage } from "./storage.ts";
+import { connectDB } from "./db.ts";
+import { api } from "../shared/routes.ts";
 import { z } from "zod";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {

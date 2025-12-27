@@ -2,7 +2,7 @@ import {
   User, InsertUser,
   Produce, InsertProduce,
   Shipment, InsertShipment
-} from "@shared/schema";
+} from "../shared/schema.ts";
 import mongoose, { Schema } from "mongoose";
 
 // Mongoose Schemas

@@ -1,7 +1,6 @@
-import app from "../server/index";
+import app from "../server/index.ts";
 
 export default async (req: any, res: any) => {
-    // Wait for the app to be fully set up (routes registered, etc.)
     try {
         const setup = (app as any).setupPromise;
         if (setup) await setup;

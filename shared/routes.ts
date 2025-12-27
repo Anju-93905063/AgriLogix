@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { 
-  insertUserSchema, 
-  insertProduceSchema, 
+import {
+  insertUserSchema,
+  insertProduceSchema,
   insertShipmentSchema,
   userSchema,
   produceSchema,
   shipmentSchema
-} from "./schema";
+} from "./schema.ts";
 
 export const errorSchemas = {
   validation: z.object({
