@@ -1,7 +1,7 @@
-import { 
-  User, InsertUser, 
-  Produce, InsertProduce, 
-  Shipment, InsertShipment 
+import {
+  User, InsertUser,
+  Produce, InsertProduce,
+  Shipment, InsertShipment
 } from "@shared/schema";
 import mongoose, { Schema } from "mongoose";
 
@@ -41,16 +41,16 @@ const ShipmentModel = mongoose.models.Shipment || mongoose.model("Shipment", shi
 export interface IStorage {
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   getAllProduce(): Promise<Produce[]>;
   getProduce(id: string): Promise<Produce | undefined>;
   createProduce(produce: InsertProduce): Promise<Produce>;
   updateProduce(id: string, produce: Partial<InsertProduce>): Promise<Produce | undefined>;
-  
+
   getShipments(): Promise<Shipment[]>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipmentStatus(id: string, status: "Scheduled" | "In Transit" | "Delivered"): Promise<Shipment | undefined>;
-  
+
   getDashboardStats(): Promise<{
     totalProduce: number;
     inTransitDeliveries: number;
@@ -135,4 +135,81 @@ export class MongoStorage implements IStorage {
   }
 }
 
-export const storage = new MongoStorage();
+export class MemStorage implements IStorage {
+  private users: User[] = [];
+  private produce: Produce[] = [];
+  private shipments: Shipment[] = [];
+  private userIdCounter = 1;
+  private produceIdCounter = 1;
+  private shipmentIdCounter = 1;
+
+  async getUsers(): Promise<User[]> {
+    return this.users;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const newUser: User = { ...user, id: (this.userIdCounter++).toString() };
+    this.users.push(newUser);
+    return newUser;
+  }
+
+  async getAllProduce(): Promise<Produce[]> {
+    return this.produce;
+  }
+
+  async getProduce(id: string): Promise<Produce | undefined> {
+    return this.produce.find(p => p.id === id);
+  }
+
+  async createProduce(produce: InsertProduce): Promise<Produce> {
+    const newProduce: Produce = {
+      ...produce,
+      id: (this.produceIdCounter++).toString(),
+      status: produce.status || "Available"
+    };
+    this.produce.push(newProduce);
+    return newProduce;
+  }
+
+  async updateProduce(id: string, update: Partial<InsertProduce>): Promise<Produce | undefined> {
+    const index = this.produce.findIndex(p => p.id === id);
+    if (index === -1) return undefined;
+    this.produce[index] = { ...this.produce[index], ...update };
+    return this.produce[index];
+  }
+
+  async getShipments(): Promise<Shipment[]> {
+    return this.shipments;
+  }
+
+  async createShipment(shipment: InsertShipment): Promise<Shipment> {
+    const newShipment: Shipment = {
+      ...shipment,
+      id: (this.shipmentIdCounter++).toString(),
+      status: shipment.status || "Scheduled",
+      //@ts-ignore
+      logs: [{ status: "Scheduled", timestamp: new Date().toISOString() }]
+    };
+    this.shipments.push(newShipment);
+    return newShipment;
+  }
+
+  async updateShipmentStatus(id: string, status: "Scheduled" | "In Transit" | "Delivered"): Promise<Shipment | undefined> {
+    const index = this.shipments.findIndex(s => s.id === id);
+    if (index === -1) return undefined;
+    this.shipments[index].status = status;
+    this.shipments[index].logs.push({ status, timestamp: new Date().toISOString() });
+    return this.shipments[index];
+  }
+
+  async getDashboardStats() {
+    return {
+      totalProduce: this.produce.length,
+      inTransitDeliveries: this.shipments.filter(s => s.status === "In Transit").length,
+      deliveredItems: this.shipments.filter(s => s.status === "Delivered").length,
+      lowStockItems: this.produce.filter(p => p.quantity < 50).length,
+    };
+  }
+}
+
+export const storage = process.env.MONGODB_URI ? new MongoStorage() : new MemStorage();
