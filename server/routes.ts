@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { connectDB } from "./db";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import mongoose from "mongoose";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   await connectDB();
@@ -109,6 +110,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const stats = await storage.getDashboardStats();
     res.json(stats);
   });
+
+  // Health Check
+  app.get("/api/health", async (req, res) => {
+    const isConnected = mongoose.connection.readyState === 1;
+    res.json({
+      status: "ok",
+      database: isConnected ? "connected" : "disconnected",
+      storageType: process.env.MONGODB_URI ? "mongo" : "memory"
+    });
+  });
+
 
   // Seed Data
   try {
