@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useProduceList, useCreateProduce } from "@/hooks/use-produce";
 import { useRole } from "@/components/RoleSelector";
-import { 
-  Plus, Search, Filter, AlertTriangle, 
-  MapPin, Calendar, Package 
+import {
+  Plus, Search, Filter, AlertTriangle,
+  MapPin, Calendar, Package, Sprout
 } from "lucide-react";
 import { format } from "date-fns";
 import { z } from "zod";
@@ -14,8 +14,8 @@ import { insertProduceSchema } from "@shared/schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger 
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage
@@ -73,7 +73,7 @@ export default function Produce() {
             <h1 className="text-3xl font-display font-bold text-primary">Produce Inventory</h1>
             <p className="text-muted-foreground">Manage harvest logs and stock levels.</p>
           </div>
-          
+
           {role === "farmer" && (
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
@@ -155,8 +155,8 @@ export default function Produce() {
         <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-xl shadow-sm border border-border/50">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search crops..." 
+            <Input
+              placeholder="Search crops..."
               className="pl-9 bg-muted/30 border-muted"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -180,7 +180,7 @@ export default function Produce() {
 
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
           </div>
         ) : filteredProduce?.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
@@ -194,14 +194,14 @@ export default function Produce() {
               <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border/60 hover:border-primary/20 overflow-hidden">
                 {/* Image placeholder - can be dynamic later */}
                 <div className="h-32 w-full bg-gradient-to-br from-primary/5 to-accent/5 relative">
-                   <div className="absolute top-3 right-3">
-                      <Badge variant={item.status === 'Available' ? 'default' : 'secondary'} 
-                             className={item.status === 'Available' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                        {item.status}
-                      </Badge>
-                   </div>
+                  <div className="absolute top-3 right-3">
+                    <Badge variant={item.status === 'Available' ? 'default' : 'secondary'}
+                      className={item.status === 'Available' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                      {item.status}
+                    </Badge>
+                  </div>
                 </div>
-                
+
                 <CardContent className="p-5 pt-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-display font-bold text-lg text-foreground group-hover:text-primary transition-colors">

@@ -20,7 +20,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await storage.createUser(input);
       res.status(201).json(user);
     } catch (error) {
-       if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
         res.status(500).json({ message: "Internal Server Error" });
@@ -46,7 +46,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const produce = await storage.createProduce(input);
       res.status(201).json(produce);
     } catch (error) {
-       if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
         res.status(500).json({ message: "Internal Server Error" });
@@ -61,7 +61,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!produce) return res.status(404).json({ message: "Not found" });
       res.json(produce);
     } catch (error) {
-       if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
         res.status(500).json({ message: "Internal Server Error" });
@@ -81,7 +81,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const shipment = await storage.createShipment(input);
       res.status(201).json(shipment);
     } catch (error) {
-       if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
         res.status(500).json({ message: "Internal Server Error" });
@@ -96,7 +96,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!shipment) return res.status(404).json({ message: "Not found" });
       res.json(shipment);
     } catch (error) {
-       if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
         res.status(500).json({ message: "Internal Server Error" });
@@ -109,7 +109,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const stats = await storage.getDashboardStats();
     res.json(stats);
   });
-  
+
   // Seed Data
   try {
     const users = await storage.getUsers();
@@ -118,19 +118,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.createUser({ name: "John Farmer", role: "farmer" });
       await storage.createUser({ name: "Fast Logistics", role: "distributor" });
       await storage.createUser({ name: "Fresh Market", role: "vendor" });
-      
+
       const produce = await storage.createProduce({
         name: "Apples", quantity: 100, harvestDate: new Date().toISOString(), sourceLocation: "Farm A", status: "Available"
       });
-      
+
       await storage.createProduce({
         name: "Corn", quantity: 40, harvestDate: new Date().toISOString(), sourceLocation: "Farm B", status: "Available"
       });
-      
+
       await storage.createShipment({
         produceId: produce.id,
         destination: "Market NYC",
         deliveryDate: new Date(Date.now() + 86400000).toISOString(),
+        status: "Scheduled"
       });
       console.log("Database seeded");
     }
