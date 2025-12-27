@@ -1,8 +1,8 @@
-import app from "../server/index";
+import app from "../server/index.js";
 
 export default async (req: any, res: any) => {
     try {
-        // Correctly wait for the server initialization
+        // Wait for server setup to complete (Routes, DB init)
         const setup = (app as any).setupPromise;
         if (setup) {
             await setup;
