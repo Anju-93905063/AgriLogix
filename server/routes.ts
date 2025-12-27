@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { type Server } from "http";
-import { storage } from "./storage";
-import { connectDB } from "./db";
-import { api } from "@shared/routes";
+import { storage } from "./storage.js";
+import { connectDB } from "./db.js";
+import { api } from "../shared/routes.js";
 import { z } from "zod";
 import mongoose from "mongoose";
 

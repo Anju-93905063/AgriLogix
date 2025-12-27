@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
+import { registerRoutes } from "./routes.js";
+import { serveStatic } from "./static.js";
 import { createServer } from "http";
 
 const app = express();
@@ -98,7 +98,7 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     httpServer.listen(
       {
         port,
-        host: "127.0.0.1",
+        host: process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1",
       },
       () => {
         log(`serving on port ${port}`);
