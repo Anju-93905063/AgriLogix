@@ -1,8 +1,9 @@
-import app from "../server/index.ts";
+import app from "../server/index";
 
 export default async (req: any, res: any) => {
     try {
-        const setup = (app as any).setupPromise;
+        // @ts-ignore - setupPromise is added in server/index.ts
+        const setup = app.setupPromise;
         if (setup) await setup;
         return app(req, res);
     } catch (err) {

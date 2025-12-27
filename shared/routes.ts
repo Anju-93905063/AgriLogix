@@ -6,7 +6,7 @@ import {
   userSchema,
   produceSchema,
   shipmentSchema
-} from "./schema.ts";
+} from "./schema";
 
 export const errorSchemas = {
   validation: z.object({
