@@ -5,6 +5,7 @@ import { connectDB } from "./db.js";
 import { api } from "../shared/routes.js";
 import { z } from "zod";
 import mongoose from "mongoose";
+import { MapsService } from "./services/maps.js";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   await connectDB();
@@ -19,6 +20,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const input = api.users.create.input.parse(req.body);
       const user = await storage.createUser(input);
+
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -79,7 +81,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post(api.shipments.create.path, async (req, res) => {
     try {
       const input = api.shipments.create.input.parse(req.body);
-      const shipment = await storage.createShipment(input);
+
+      // Integrate Google Maps
+      const produce = await storage.getProduce(input.produceId);
+      const source = produce?.sourceLocation || "Unknown Farm";
+      const routeData = await MapsService.getRoute(source, input.destination);
+
+      const shipment = await storage.createShipment({
+        ...input,
+        routeData // Modularly added to record
+      });
+
       res.status(201).json(shipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -95,6 +107,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const input = api.shipments.updateStatus.input.parse(req.body);
       const shipment = await storage.updateShipmentStatus(req.params.id, input.status);
       if (!shipment) return res.status(404).json({ message: "Not found" });
+
       res.json(shipment);
     } catch (error) {
       if (error instanceof z.ZodError) {

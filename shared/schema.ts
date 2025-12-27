@@ -18,7 +18,7 @@ export const insertUserSchema = userSchema.omit({ id: true });
 export const produceSchema = z.object({
   id: z.string(),
   name: z.string(),
-  quantity: z.number().min(0),
+  quantity: z.coerce.number().min(0),
   harvestDate: z.string(), // ISO date string
   sourceLocation: z.string(),
   status: produceStatusEnum.default("Available"),
@@ -39,6 +39,16 @@ export const shipmentSchema = z.object({
   deliveryDate: z.string(),
   status: shipmentStatusEnum.default("Scheduled"),
   logs: z.array(logSchema),
+  routeData: z.object({
+    distance: z.string(),
+    duration: z.string(),
+    source: z.string(),
+    destination: z.string(),
+    coordinates: z.object({
+      start: z.object({ lat: z.number(), lng: z.number() }),
+      end: z.object({ lat: z.number(), lng: z.number() }),
+    }).optional(),
+  }).optional(),
 });
 
 export const insertShipmentSchema = shipmentSchema.omit({ id: true, logs: true });

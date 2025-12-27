@@ -4,10 +4,11 @@ import { useShipmentsList, useCreateShipment, useUpdateShipmentStatus } from "@/
 import { useProduceList } from "@/hooks/use-produce";
 import { useRole } from "@/components/RoleSelector";
 import { format } from "date-fns";
-import { 
-  Truck, Plus, MapPin, CalendarClock, PackageCheck, 
-  ArrowRight, CheckCircle2, Clock 
+import {
+  Truck, Plus, MapPin, CalendarClock, PackageCheck,
+  ArrowRight, CheckCircle2, Clock, Map as MapIcon, Eye
 } from "lucide-react";
+import { MapVisualization } from "@/components/MapVisualization";
 
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -145,7 +146,7 @@ export default function Shipments() {
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
           </div>
         ) : shipments?.length === 0 ? (
-           <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
+          <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
             <Truck className="mx-auto h-12 w-12 text-muted-foreground/50" />
             <h3 className="mt-4 text-lg font-semibold text-foreground">No active shipments</h3>
             <p className="text-muted-foreground">Schedule a new delivery to get started.</p>
@@ -160,9 +161,9 @@ export default function Shipments() {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant="outline" className={`
-                          ${shipment.status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-200' : 
-                            shipment.status === 'In Transit' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                            'bg-amber-50 text-amber-700 border-amber-200'}
+                          ${shipment.status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-200' :
+                            shipment.status === 'In Transit' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'}
                         `}>
                           {shipment.status === 'Delivered' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                           {shipment.status === 'In Transit' && <Truck className="w-3 h-3 mr-1" />}
@@ -171,11 +172,11 @@ export default function Shipments() {
                         </Badge>
                         <span className="text-xs text-muted-foreground font-mono">ID: {shipment.id.slice(0, 8)}</span>
                       </div>
-                      
+
                       <h3 className="text-lg font-bold font-display text-foreground">
                         {getProduceName(shipment.produceId)}
                       </h3>
-                      
+
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm text-muted-foreground mt-2">
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-1.5 text-primary/60" />
@@ -186,6 +187,53 @@ export default function Shipments() {
                           Due: {format(new Date(shipment.deliveryDate), 'MMM d, yyyy')}
                         </div>
                       </div>
+
+                      {(shipment as any).routeData && (
+                        <div className="mt-4 p-3 bg-muted/30 rounded-lg flex flex-wrap gap-4 text-xs font-medium border border-border/50">
+                          <div className="flex items-center text-primary">
+                            <Truck className="w-3.5 h-3.5 mr-1.5" />
+                            <span>Distance: {(shipment as any).routeData.distance}</span>
+                          </div>
+                          <div className="flex items-center text-primary">
+                            <Clock className="w-3.5 h-3.5 mr-1.5" />
+                            <span>Est. Duration: {(shipment as any).routeData.duration}</span>
+                          </div>
+                          <div className="w-full text-muted-foreground italic flex items-center gap-1 mt-1 border-t border-border/50 pt-2 text-[10px] justify-between">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-2.5 h-2.5" />
+                              <span>{(shipment as any).routeData.source} <ArrowRight className="inline w-2.5 h-2.5 mx-0.5" /> {(shipment as any).routeData.destination}</span>
+                            </div>
+
+                            {(shipment as any).routeData.coordinates && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-6 text-[10px] text-primary hover:text-primary/80 px-2">
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    Visual Map
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[700px] h-[500px] p-0 overflow-hidden">
+                                  <div className="p-4 border-b bg-muted/5">
+                                    <h2 className="font-bold flex items-center gap-2">
+                                      <MapIcon className="w-4 h-4 text-primary" />
+                                      Route Visualization
+                                    </h2>
+                                    <p className="text-xs text-muted-foreground">Mapping route from {(shipment as any).routeData.source} to {(shipment as any).routeData.destination}</p>
+                                  </div>
+                                  <div className="flex-1 min-h-0">
+                                    <MapVisualization
+                                      start={(shipment as any).routeData.coordinates.start}
+                                      end={(shipment as any).routeData.coordinates.end}
+                                      source={(shipment as any).routeData.source}
+                                      destination={(shipment as any).routeData.destination}
+                                    />
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Timeline / Progress Visualization (Simple) */}
@@ -201,8 +249,8 @@ export default function Shipments() {
                     {(role === "distributor" || role === "vendor") && (
                       <div className="flex gap-2 w-full lg:w-auto mt-4 lg:mt-0">
                         {shipment.status === "Scheduled" && (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             className="w-full lg:w-auto border-blue-200 hover:bg-blue-50 text-blue-700"
                             onClick={() => updateStatusMutation.mutate({ id: shipment.id, status: "In Transit" })}
@@ -213,8 +261,8 @@ export default function Shipments() {
                           </Button>
                         )}
                         {shipment.status === "In Transit" && (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             className="w-full lg:w-auto bg-green-600 hover:bg-green-700 text-white"
                             onClick={() => updateStatusMutation.mutate({ id: shipment.id, status: "Delivered" })}
                             disabled={updateStatusMutation.isPending}

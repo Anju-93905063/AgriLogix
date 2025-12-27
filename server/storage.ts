@@ -30,10 +30,19 @@ const shipmentSchema = new Schema({
   deliveryDate: { type: String, required: true },
   status: { type: String, enum: ["Scheduled", "In Transit", "Delivered"], default: "Scheduled" },
   logs: [logSchema],
+  routeData: {
+    distance: String,
+    duration: String,
+    source: String,
+    destination: String,
+    coordinates: {
+      start: { lat: Number, lng: Number },
+      end: { lat: Number, lng: Number }
+    }
+  },
 });
 
 // Models
-// Use existing models if defined to prevent OverwriteModelError in dev HMR
 const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
 const ProduceModel = mongoose.models.Produce || mongoose.model("Produce", produceSchema);
 const ShipmentModel = mongoose.models.Shipment || mongoose.model("Shipment", shipmentSchema);
@@ -188,7 +197,7 @@ export class MemStorage implements IStorage {
       id: (this.shipmentIdCounter++).toString(),
       status: shipment.status || "Scheduled",
       //@ts-ignore
-      logs: [{ status: "Scheduled", timestamp: new Date().toISOString() }]
+      logs: [{ status: "Scheduled", timestamp: new Date().toISOString() }],
     };
     this.shipments.push(newShipment);
     return newShipment;
