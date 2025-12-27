@@ -3,11 +3,21 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  let distPath = path.resolve(__dirname, "public");
+
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    // Try parent directory (useful for Vercel if running from api/ folder)
+    distPath = path.resolve(__dirname, "..", "dist", "public");
+  }
+
+  if (!fs.existsSync(distPath)) {
+    // Try current directory dist (if __dirname is project root)
+    distPath = path.resolve(process.cwd(), "dist", "public");
+  }
+
+  if (!fs.existsSync(distPath)) {
+    console.warn(`Static directory not found at ${distPath}. This might be expected during build or if only API is needed.`);
+    return;
   }
 
   app.use(express.static(distPath));
