@@ -73,9 +73,11 @@ const setupPromise = (async () => {
     res.status(status).json({ message });
   });
 
-  if (process.env.NODE_ENV === "production") {
+  // On Vercel, static files are handled by the Edge network via vercel.json
+  // We only serve static files manually in local production mode
+  if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
     serveStatic(app);
-  } else {
+  } else if (!process.env.VERCEL) {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
