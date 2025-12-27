@@ -60,17 +60,17 @@ app.use((req, res, next) => {
   next();
 });
 
-const setup = (async () => {
+const setupPromise = (async () => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
     if (process.env.NODE_ENV !== "production") {
       console.error(err);
     }
+    res.status(status).json({ message });
   });
 
   if (process.env.NODE_ENV === "production") {
@@ -83,9 +83,11 @@ const setup = (async () => {
   return app;
 })();
 
+(app as any).setupPromise = setupPromise;
+
 // Start server if not running on Vercel
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  setup.then(() => {
+  setupPromise.then(() => {
     const port = parseInt(process.env.PORT || "5000", 10);
     httpServer.listen(
       {
@@ -96,6 +98,8 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
         log(`serving on port ${port}`);
       },
     );
+  }).catch(err => {
+    console.error("Failed to start server:", err);
   });
 }
 
