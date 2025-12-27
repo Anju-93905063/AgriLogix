@@ -1,14 +1,23 @@
 import app from "../server/index";
 
 export default async (req: any, res: any) => {
-    // ESM handler for Vercel
     try {
+        // Wait for server setup to complete (Routes, DB init)
         // @ts-ignore
-        const setup = app.setupPromise;
-        if (setup) await setup;
+        if (app.setupPromise) {
+            await app.setupPromise;
+        }
+
+        // Handle the request
         return app(req, res);
-    } catch (err) {
-        console.error("Vercel handler error:", err);
-        res.status(500).send("Internal Server Error");
+    } catch (err: any) {
+        console.error("Vercel Backend Error:", err);
+
+        // In production, we usually hide details, but we need them for debugging right now
+        res.status(500).json({
+            error: "Backend Execution Failed",
+            message: err.message,
+            stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+        });
     }
 };

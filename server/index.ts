@@ -23,6 +23,10 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+import cors from "cors";
+app.use(cors());
+
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",

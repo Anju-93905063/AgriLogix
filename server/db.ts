@@ -7,10 +7,11 @@ export async function connectDB() {
   }
 
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
+    });
     console.log("MongoDB connected successfully");
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    // Don't exit process, just log error so dev server stays up
+  } catch (error: any) {
+    console.error("MongoDB connection error:", error.message);
   }
 }
