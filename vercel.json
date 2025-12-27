@@ -6,10 +6,6 @@
             "destination": "/api/index.ts"
         },
         {
-            "source": "/assets/(.*)",
-            "destination": "/dist/public/assets/$1"
-        },
-        {
             "source": "/(.*)",
             "destination": "/api/index.ts"
         }

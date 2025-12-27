@@ -5,11 +5,12 @@ import path from "path";
 export function serveStatic(app: Express) {
   const root = process.cwd();
 
-  // Vercel path for public assets inside the build output
+  // Try to find where the dist/public folder actually is in Vercel
   const possiblePaths = [
     path.resolve(root, "dist", "public"),
     path.resolve(root, "public"),
-    path.resolve(root, "..", "dist", "public"), // fallback for combined builds
+    path.resolve(root, "client", "dist"),
+    path.resolve(__dirname, "..", "dist", "public"),
   ];
 
   let distPath = "";
@@ -21,36 +22,46 @@ export function serveStatic(app: Express) {
   }
 
   if (!distPath) {
-    console.warn("Static files not found manually, falling back to process.cwd()/dist/public");
-    distPath = path.resolve(root, "dist", "public");
+    // If not found, log and continue. The app will likely fail to serve frontend.
+    console.error("CRITICAL: Frontend build not found! Checked:", possiblePaths);
+    return;
   }
 
-  // Serve static assets with correct MIME types
+  console.log(`FOUND STATIC FILES AT: ${distPath}`);
+
+  // 1. Serve static files with Express. 
+  // We use a custom middleware to ensure correct MIME types which prevents the "download" issue.
   app.use(express.static(distPath, {
     index: false,
-    maxAge: '1d',
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.js': 'application/javascript',
+        '.css': 'text/css',
+        '.html': 'text/html',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.svg': 'image/svg+xml',
+        '.json': 'application/json'
+      };
+      if (mimeTypes[ext]) {
+        res.setHeader('Content-Type', mimeTypes[ext]);
       }
     }
   }));
 
-  // SPA handler: Serve index.html for all non-API routes
+  // 2. SPA Fallback: All other non-API routes serve index.html
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
     }
 
-    // For Vercel, if static files were not found by express.static above,
-    // this will attempt to send index.html directly
     const indexPath = path.resolve(distPath, "index.html");
     if (fs.existsSync(indexPath)) {
-      res.status(200).sendFile(indexPath);
+      res.setHeader('Content-Type', 'text/html');
+      res.sendFile(indexPath);
     } else {
-      res.status(404).send("Application front-end (index.html) not found in deployment. Path: " + indexPath);
+      res.status(404).send("UI index.html not found. Please check deployment logs.");
     }
   });
 }
