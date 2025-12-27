@@ -2,11 +2,7 @@
     "version": 2,
     "functions": {
         "api/index.ts": {
-            "includeFiles": [
-                "dist/public/**",
-                "server/**/*.ts",
-                "shared/**/*.ts"
-            ]
+            "includeFiles": "dist/public/**"
         }
     },
     "rewrites": [
