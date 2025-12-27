@@ -2,22 +2,18 @@ import app from "../server/index";
 
 export default async (req: any, res: any) => {
     try {
-        // Wait for server setup to complete (Routes, DB init)
-        // @ts-ignore
-        if (app.setupPromise) {
-            await app.setupPromise;
+        // Correctly wait for the server initialization
+        const setup = (app as any).setupPromise;
+        if (setup) {
+            await setup;
         }
 
-        // Handle the request
         return app(req, res);
     } catch (err: any) {
-        console.error("Vercel Backend Error:", err);
-
-        // In production, we usually hide details, but we need them for debugging right now
+        console.error("Vercel Backend Error:", err.message);
         res.status(500).json({
             error: "Backend Execution Failed",
-            message: err.message,
-            stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+            message: err.message
         });
     }
 };
